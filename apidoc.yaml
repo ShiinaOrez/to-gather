@@ -1,0 +1,641 @@
+swagger: '2.0'
+
+### information start ###
+info:
+  description: TO-GATHER api
+  version: 0.0.1
+  title: Work API
+  contact:
+    email: shiinaorez@gmail.com
+    # license
+### information end ###
+
+host: onion.muxixyz.com
+basePath: /api/v1.0
+schemes:
+  - https
+  - http
+
+### tag start ###
+
+tags:
+  - name: auth
+    description: authentication
+  
+  - name: activity
+    description: activity service
+
+### tag end ###
+
+### auth start ###
+securityDefinitions:
+  basic:
+    type: basic
+    description: http basic auth
+  
+  token:
+    type: apiKey
+    description: token
+    name: token
+    in: header
+
+### auth end ###
+
+### path start ###
+
+paths:
+  /auth/login/:
+    post:
+      tags:
+        - auth
+      summary: Login for account by student number.
+      description: Get the token and personal information.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: POSTdata
+          in: body
+          description: information for login
+          schema:
+            required:
+              - std_num
+              - password
+              - username
+              - qq
+            properties:
+              std_num:
+                type: string
+              password:
+                type: string
+              username:
+                type: string
+              qq:
+                type: string
+              tel:
+                type: string
+      response:
+        200:
+          description: return a token
+          schema:
+            required:
+              - token
+              - username
+              - std_num
+            properties:
+              token:
+                type: string
+              username:
+                type: string
+              std_num:
+                type: string
+        401:
+          description: login fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+
+  /activity/post/:
+    post:
+      tags:
+        - activity
+      summary: post a new activity
+      description: receive required information and generate a new pickable obejct
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: POSTdata
+          in: body
+          description: data to generate new pickable
+          schema:
+            required:
+              - date
+              - time
+              - location
+              - event
+              - question
+            properties:
+              date:
+                type: string
+              time:
+                type: string
+              location:
+                type: string
+              event:
+                type: string
+              question:
+                type: string
+      response:
+        200:
+          description: OK
+          schema:
+            required:
+              - activityID
+            properties:
+              activityID:
+                type: integer
+        403:
+          description: POST fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+      security:
+        - token: []
+        
+  /activity/{aid}/:
+    get:
+      tags:
+        - activity
+      summary: get information for a activity by aid.
+      description: reveive a activity id and return the information about it.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: aid
+          description: activityID
+          required: true
+          type: integer
+      response:
+        200:
+          description: information of activity
+          schema:
+            required:
+              - date
+              - time
+              - location
+              - event
+              - question
+              - posterID
+              - pickable
+            properties:
+              date:
+                type: string
+              time:
+                type: string
+              location:
+                type: string
+              event:
+                type: string
+              question:
+                type: string
+              posterID:
+                type: int
+              pickable:
+                type: bool
+        401:
+          description: authenticate fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        403:
+          description: activity out of time range
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        406:
+          description: activity not existed
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+      security:
+        - token: []
+
+    post:
+      tags:
+        - activity
+      summary: pick the activity
+      description: pick the activity
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: aid
+          description: activityID
+          required: true
+          type: integer
+      response:
+        200:
+          description: get the question if activity pickable
+          schema:
+            required:
+              - question
+            properties:
+              question:
+                type: string
+        401:
+          description: authenticate fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        402:
+          description: already picked it before
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        403:
+          description: activity out of time range
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        405:
+          description: activity is over
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        406:
+          description: activity not existed
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        407:
+          description: can't pick your self!
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+      security:
+        - token: []
+  
+    put:
+      tags: 
+        - activity
+      summary: close the activity(not delete)
+      description: poster make sure to picker, propbobly close it.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: aid
+          description: activityID
+          required: true
+          type: integer
+        - in: body
+          name: POSTdata
+          description: the answer poster send to picker
+          schema:
+            required:
+              - answer
+              - atti
+            properties:
+              answer:
+                type: string
+              atti:
+                type: bool
+      response:
+        200:
+          description: close successful
+          schema:
+            required:
+              - msg
+              - pickable
+            properties:
+              msg:
+                type: string
+        201:
+          description: refuse successful
+          schema:
+            required:
+              - msg
+              - pickable
+            properties:
+              msg:
+                type: string
+              pickable:
+                type: bool
+        401:
+          description: authenticate fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        402:
+          description: already picked it before
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        403:
+          description: activity out of time range
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        406:
+          description: activity not existed
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        407:
+          description: can't pick your self!
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+      security:
+        - token: []
+
+  /activity/{aid}/make-sure/:
+    get:
+      tags:
+        - activity
+      summary: poster make sure the answer about question, so the picker can get the information
+      description: verify token and check the event
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: aid
+          description: activityID, make sure the activity pick successful!
+          required: true
+          type: integer
+      response:
+        200:
+          description: OK
+          schema:
+            required:
+              - qq
+            properties:
+              qq:
+                type: string
+              tel:
+                type: string
+        401:
+          description: verify failed
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        402:
+          description: bad status; statu is not 'successful'
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        406:
+          description: activity not existed
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        407:
+          description: you can't pick your self
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+      security:
+        - token: []
+
+  /activity/pickable/list/:
+    get:
+      tags:
+        - activity
+      summary: get the pickable activity list random
+      description: verify token and get the pickable list
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: aid
+          description: activityID
+          required: true
+          type: integer
+      response:
+        200:
+          description: OK
+          schema:
+            required:
+              - activityList
+            properties:
+              activityList:
+                type: array
+                items:
+                  required:
+                    - activityID
+                    - datetime
+                    - event
+                    - posterNum
+                    - posterName
+                  properties:
+                    datetime:
+                      type: string
+                    location:
+                      type: string
+                    event:
+                      type: string
+                    posterNum:
+                      type: integer
+                    posterName:
+                      type: string
+        201:
+          description: none activity pickable
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+  
+  /user/{unum}/post-activities/list/:
+    get:
+      tags:
+        - activity
+      summary: get one's post activities list
+      description: pages?
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: unum
+          description: user student number
+          required: true
+          type: string
+      response:
+        200:
+          description: OK
+          schema:
+            required:
+              - activityList
+            properties:
+              activityList:
+                type: array
+                items:
+                  required:
+                    - activityID
+                    - datetime
+                    - event
+                    - pickable
+                  properties:
+                    datetime:
+                      type: string
+                    location:
+                      type: string
+                    event:
+                      type: string
+                    pickable:
+                      type: bool
+        201:
+          description: none activity
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        401:
+          description: authenticate fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        407:
+          description: please check your self information
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+      security:
+        - token: []
+
+  /user/{unum}/pick-activities/list/:
+    get:
+      tags:
+        - activity
+      summary: get one's picked activities list
+      description: pages?
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: unum
+          description: user student number
+          required: true
+          type: string
+        - in: path
+          name: type
+          description: type to get list;all;waiting;fail;successful;close;
+          required: true
+          type: string
+      response:
+        200:
+          description: OK
+          schema:
+            required:
+              - activityList
+            properties:
+              activityList:
+                type: array
+                items:
+                  required:
+                    - activityID
+                    - datetime
+                    - event
+                    - statu
+                  properties:
+                    datetime:
+                      type: string
+                    location:
+                      type: string
+                    event:
+                      type: string
+                    statu:
+                      type: integer # 0-waiting 1-successful 2-close 
+        201:
+          description: none activity
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        401:
+          description: authenticate fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        407:
+          description: please check your self information
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+      security:
+        - token: []
