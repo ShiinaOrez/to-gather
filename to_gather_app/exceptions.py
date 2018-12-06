@@ -1,0 +1,2 @@
+class ActivityErro(ValueError):
+    pass
