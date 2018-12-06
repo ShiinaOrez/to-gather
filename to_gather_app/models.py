@@ -24,7 +24,32 @@ class Activity(db.Model):
     event = db.Column(db.String(120))
     location = db.Column(db.String(60))
     question = db.Column(db.String120)
+    pickable = db.Column(db.Bool, default=True)
+    close = db.Column(db.Bool, default=False)
     poster_id = db.Column
 
-    def __get__(self):
-        
+    def __get__(self, obj, type=None):
+        if obj is None:
+            return self
+        _rv = {
+                  "aid": self.id,
+                  "date": str(self.date),
+                  "time": self.time,
+                  "event": self.event,
+                  "location": self.location,
+              }
+        return _rv
+
+    def __set__(self, obj, value):
+        if value not in ("pick", "close"):
+            raise ActivityError
+        if value is "pick":
+            if self.pickable:
+                self.pickable = False
+            else:
+                raise ActivityError
+        if value is "close":
+            if not self.close:
+                self.close = True
+        db.session.add(self)
+        db.session.commit()
