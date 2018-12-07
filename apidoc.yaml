@@ -10,7 +10,7 @@ info:
     # license
 ### information end ###
 
-host: onion.muxixyz.com
+host: to-gather.muxixyz.com
 basePath: /api/v1.0
 schemes:
   - https
@@ -24,6 +24,9 @@ tags:
   
   - name: activity
     description: activity service
+  
+  - name: message
+    description: pick message service
 
 ### tag end ###
 
@@ -75,7 +78,7 @@ paths:
                 type: string
               tel:
                 type: string
-      response:
+      responses:
         200:
           description: return a token
           schema:
@@ -131,7 +134,7 @@ paths:
                 type: string
               question:
                 type: string
-      response:
+      responses:
         200:
           description: OK
           schema:
@@ -167,7 +170,7 @@ paths:
           description: activityID
           required: true
           type: integer
-      response:
+      responses:
         200:
           description: information of activity
           schema:
@@ -191,9 +194,9 @@ paths:
               question:
                 type: string
               posterID:
-                type: int
+                type: integer
               pickable:
-                type: bool
+                type: boolean
         401:
           description: authenticate fail
           schema:
@@ -236,7 +239,7 @@ paths:
           description: activityID
           required: true
           type: integer
-      response:
+      responses:
         200:
           description: get the question if activity pickable
           schema:
@@ -322,8 +325,8 @@ paths:
               answer:
                 type: string
               atti:
-                type: bool
-      response:
+                type: boolean
+      responses:
         200:
           description: close successful
           schema:
@@ -343,7 +346,7 @@ paths:
               msg:
                 type: string
               pickable:
-                type: bool
+                type: boolean
         401:
           description: authenticate fail
           schema:
@@ -403,7 +406,7 @@ paths:
           description: activityID, make sure the activity pick successful!
           required: true
           type: integer
-      response:
+      responses:
         200:
           description: OK
           schema:
@@ -465,7 +468,7 @@ paths:
           description: activityID
           required: true
           type: integer
-      response:
+      responses:
         200:
           description: OK
           schema:
@@ -517,13 +520,16 @@ paths:
           description: user student number
           required: true
           type: string
-      response:
+      responses:
         200:
           description: OK
           schema:
             required:
               - activityList
+              - activityCount
             properties:
+              activityCount:
+                type: integer
               activityList:
                 type: array
                 items:
@@ -540,7 +546,7 @@ paths:
                     event:
                       type: string
                     pickable:
-                      type: bool
+                      type: boolean
         201:
           description: none activity
           schema:
@@ -589,13 +595,16 @@ paths:
           description: type to get list;all;waiting;fail;successful;close;
           required: true
           type: string
-      response:
+      responses:
         200:
           description: OK
           schema:
             required:
               - activityList
+              - activityCount
             properties:
+              activityCount:
+                type: integer
               activityList:
                 type: array
                 items:
@@ -639,3 +648,174 @@ paths:
                 type: string
       security:
         - token: []
+
+  /user/{unum}/message/{mid}/:
+    get:
+      tags:
+        - message
+      summary: get the information about one message
+      description: read, receive message ID and check it
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: mid
+          description: messageID
+          required: true
+          type: integer
+        - in: path
+          name: unum
+          description: user student number
+          required: true
+          type: string
+      responses:
+        200:
+          description: OK, and activity is not closed
+          schema:
+            required:
+              - poster
+              - picker
+              - answer
+              - time
+              - readed
+            properties:
+              poster:
+                type: integer
+              picker:
+                type: integer
+              answer:
+                type: string
+              time:
+                type: string
+              readed:
+                type: boolean
+        201:
+          description: OK, but activity closed
+          schema:
+            required:
+              - poster
+              - picker
+              - answer
+              - time
+              - readed
+            properties:
+              poster:
+                type: integer
+              picker:
+                type: integer
+              answer:
+                type: string
+              time:
+                type: string
+              readed:
+                type: boolean
+        401:
+          description: authenticate fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        406:
+          description: message not existed
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        407:
+          description: please check your self messages
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+      security:
+        - token: []
+  
+  /user/{unum}/message/list/:
+    get:
+      tags:
+        - message
+      summary: get the message list
+      description: page?
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: unum
+          description: student number
+          required: true
+          type: string
+        - in: path
+          name: type
+          description: get type, like "all","readed","unreaded"
+          required: true
+          type: string
+      responses:
+        200:
+          description: receive message list
+          schema:
+            required:
+              - messageList
+              - messageCount
+            properties:
+              messageCount:
+                type: integer
+              messageList:
+                type: array
+                items:
+                  required:
+                    - readed
+                    - pickerName
+                    - time
+                  properties:
+                    readed:
+                      type: boolean
+                    pickerName:
+                      type: string
+                    time:
+                      type: string
+        201:
+          description: none message
+          schema:
+            required:
+              - msg
+            properties:
+              msg: 
+                type: string
+        401:
+          description: authenticate fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        406:
+          description: user not existed
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        407:
+          description: please check your self messages
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+      security:
+        - token: []
+            
+
