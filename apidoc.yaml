@@ -67,6 +67,7 @@ paths:
               - password
               - username
               - qq
+              - tel
             properties:
               std_num:
                 type: string
@@ -118,14 +119,20 @@ paths:
           description: data to generate new pickable
           schema:
             required:
-              - date
+              - year
+              - month
+              - day
               - time
               - location
               - event
               - question
             properties:
-              date:
-                type: string
+              year:
+                type: integer
+              month:
+                type: integer
+              day:
+                type: integer
               time:
                 type: string
               location:
@@ -143,6 +150,22 @@ paths:
             properties:
               activityID:
                 type: integer
+        401:
+          description: authenticate fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        402:
+          description: payload invalid
+          schema:
+            required:
+              - msg
+            propeties:
+              msg:
+                type: string
         403:
           description: POST fail
           schema:
