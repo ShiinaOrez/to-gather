@@ -66,18 +66,12 @@ paths:
               - std_num
               - password
               - username
-              - qq
-              - tel
             properties:
               std_num:
                 type: string
               password:
                 type: string
               username:
-                type: string
-              qq:
-                type: string
-              tel:
                 type: string
       responses:
         200:
@@ -126,6 +120,8 @@ paths:
               - location
               - event
               - question
+              - tel
+              - qq
             properties:
               year:
                 type: integer
@@ -140,6 +136,10 @@ paths:
               event:
                 type: string
               question:
+                type: string
+              tel:
+                type: string
+              qq:
                 type: string
       responses:
         200:
@@ -163,7 +163,7 @@ paths:
           schema:
             required:
               - msg
-            propeties:
+            properties:
               msg:
                 type: string
         403:
@@ -202,8 +202,11 @@ paths:
               - time
               - location
               - event
+              - qq
+              - tel
               - question
-              - posterID
+              - posterName
+              - posterNum
               - pickable
             properties:
               date:
@@ -214,12 +217,30 @@ paths:
                 type: string
               event:
                 type: string
+              qq:
+                type: string
+              tel:
+                type: string
               question:
                 type: string
-              posterID:
-                type: integer
-              pickable:
-                type: boolean
+              posterName:
+                type: string
+              posterNum:
+                type: string
+              status:
+                type: array
+                items:
+                  required:
+                    - pickable
+                    - waiting
+                    - close
+                  properties:
+                    pickable:
+                      type: boolean
+                    waiting:
+                      type: boolean
+                    close:
+                      type: boolean
         401:
           description: authenticate fail
           schema:
@@ -262,12 +283,21 @@ paths:
           description: activityID
           required: true
           type: integer
-      responses:
-        200:
-          description: get the question if activity pickable
+        - in: body
+          name: POSTdata
+          description: post data answer
           schema:
             required:
-              - question
+              - answer
+            properties:
+              answer:
+                type: string
+      responses:
+        200:
+          description: pick the activity successful
+          schema:
+            required:
+              - msg
             properties:
               question:
                 type: string
@@ -342,16 +372,16 @@ paths:
           description: the answer poster send to picker
           schema:
             required:
-              - answer
+              - pickerID
               - atti
             properties:
-              answer:
-                type: string
+              pickerID:
+                type: integer
               atti:
                 type: boolean
       responses:
         200:
-          description: close successful
+          description: makesure successful
           schema:
             required:
               - msg
@@ -359,6 +389,8 @@ paths:
             properties:
               msg:
                 type: string
+              pickable:
+                type: boolean
         201:
           description: refuse successful
           schema:
@@ -378,16 +410,16 @@ paths:
             properties:
               msg:
                 type: string
-        402:
-          description: already picked it before
+        403:
+          description: activity out of time range
           schema:
             required:
               - msg
             properties:
               msg:
                 type: string
-        403:
-          description: activity out of time range
+        405:
+          description: pick is over
           schema:
             required:
               - msg
@@ -413,68 +445,6 @@ paths:
       security:
         - token: []
 
-  /activity/{aid}/make-sure/:
-    get:
-      tags:
-        - activity
-      summary: poster make sure the answer about question, so the picker can get the information
-      description: verify token and check the event
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - in: path
-          name: aid
-          description: activityID, make sure the activity pick successful!
-          required: true
-          type: integer
-      responses:
-        200:
-          description: OK
-          schema:
-            required:
-              - qq
-            properties:
-              qq:
-                type: string
-              tel:
-                type: string
-        401:
-          description: verify failed
-          schema:
-            required:
-              - msg
-            properties:
-              msg:
-                type: string
-        402:
-          description: bad status; statu is not 'successful'
-          schema:
-            required:
-              - msg
-            properties:
-              msg:
-                type: string
-        406:
-          description: activity not existed
-          schema:
-            required:
-              - msg
-            properties:
-              msg:
-                type: string
-        407:
-          description: you can't pick your self
-          schema:
-            required:
-              - msg
-            properties:
-              msg:
-                type: string
-      security:
-        - token: []
-
   /activity/pickable/list/:
     get:
       tags:
@@ -487,8 +457,8 @@ paths:
         - application/json
       parameters:
         - in: path
-          name: aid
-          description: activityID
+          name: page
+          description: page to get, default is 1, pageSize=10
           required: true
           type: integer
       responses:
@@ -497,7 +467,19 @@ paths:
           schema:
             required:
               - activityList
+              - pageNum
+              - pageMax
+              - hasNext
+              - rowsNum
             properties:
+              pageNum:
+                type: integer
+              pageMax:
+                type: integer
+              hasNext:
+                type: boolean
+              rowsNum:
+                type: integer
               activityList:
                 type: array
                 items:
@@ -505,18 +487,12 @@ paths:
                     - activityID
                     - datetime
                     - event
-                    - posterNum
-                    - posterName
                   properties:
                     datetime:
                       type: string
                     location:
                       type: string
                     event:
-                      type: string
-                    posterNum:
-                      type: integer
-                    posterName:
                       type: string
         201:
           description: none activity pickable
@@ -532,7 +508,7 @@ paths:
       tags:
         - activity
       summary: get one's post activities list
-      description: pages?
+      description: pages
       consumes:
         - application/json
       produces:
@@ -543,15 +519,29 @@ paths:
           description: user student number
           required: true
           type: string
+        - in: path
+          name: page
+          description: page to get, default page is 1, pageSize = 10
+          required: true
+          type: integer
       responses:
         200:
           description: OK
           schema:
             required:
               - activityList
-              - activityCount
+              - pageNum
+              - pageMax
+              - hasNext
+              - rowsNum
             properties:
-              activityCount:
+              pageNum:
+                type: integer
+              pageMax:
+                type: integer
+              hasNext:
+                type: boolean
+              rowsNum:
                 type: integer
               activityList:
                 type: array
@@ -560,7 +550,8 @@ paths:
                     - activityID
                     - datetime
                     - event
-                    - pickable
+                    - close
+                    - hasMessage
                   properties:
                     datetime:
                       type: string
@@ -568,7 +559,9 @@ paths:
                       type: string
                     event:
                       type: string
-                    pickable:
+                    close:
+                      type: boolean
+                    hasMessage:
                       type: boolean
         201:
           description: none activity
@@ -580,6 +573,14 @@ paths:
                 type: string
         401:
           description: authenticate fail
+          schema:
+            required:
+              - msg
+            properties:
+              msg:
+                type: string
+        406:
+          description: User not existed
           schema:
             required:
               - msg
@@ -602,7 +603,7 @@ paths:
       tags:
         - activity
       summary: get one's picked activities list
-      description: pages?
+      description: pages
       consumes:
         - application/json
       produces:
@@ -614,19 +615,28 @@ paths:
           required: true
           type: string
         - in: path
-          name: type
-          description: type to get list;all;waiting;fail;successful;close;
+          name: page
+          description: page to get, default is 1, pageSize = 10
           required: true
-          type: string
+          type: integer
       responses:
         200:
           description: OK
           schema:
             required:
               - activityList
-              - activityCount
+              - pageNum
+              - pageMax
+              - hasNext
+              - rowsNum
             properties:
-              activityCount:
+              pageNum:
+                type: integer
+              pageMax:
+                type: integer
+              hasNext:
+                type: boolean
+              rowsNum:
                 type: integer
               activityList:
                 type: array
@@ -644,7 +654,7 @@ paths:
                     event:
                       type: string
                     statu:
-                      type: integer # 0-waiting 1-successful 2-close 
+                      type: integer # 0-waiting 1-successful 2-fail 
         201:
           description: none activity
           schema:
@@ -698,36 +708,24 @@ paths:
           description: OK, and activity is not closed
           schema:
             required:
-              - poster
-              - picker
+              - datetime
+              - location
+              - event
+              - question
               - answer
+              - qq
+              - tel
               - time
               - readed
             properties:
-              poster:
-                type: integer
-              picker:
-                type: integer
-              answer:
+              datetime:
                 type: string
-              time:
+              location:
                 type: string
-              readed:
-                type: boolean
-        201:
-          description: OK, but activity closed
-          schema:
-            required:
-              - poster
-              - picker
-              - answer
-              - time
-              - readed
-            properties:
-              poster:
-                type: integer
-              picker:
-                type: integer
+              event:
+                type: string
+              question:
+                type: string
               answer:
                 type: string
               time:
@@ -761,7 +759,7 @@ paths:
       security:
         - token: []
   
-  /user/{unum}/message/list/:
+  /user/{unum}/activity/{aid}/message/list/:
     get:
       tags:
         - message
@@ -777,6 +775,11 @@ paths:
           description: student number
           required: true
           type: string
+        - in: path
+          name: aid
+          description: activityID
+          required: true
+          type: integer
         - in: path
           name: type
           description: get type, like "all","readed","unreaded"
@@ -796,16 +799,10 @@ paths:
                 type: array
                 items:
                   required:
-                    - readed
-                    - pickerName
-                    - time
+                    - mid
                   properties:
-                    readed:
-                      type: boolean
-                    pickerName:
-                      type: string
-                    time:
-                      type: string
+                    mid:
+                      type: integer
         201:
           description: none message
           schema:
@@ -821,6 +818,10 @@ paths:
               - msg
             properties:
               msg:
+                type: string
+              pickerName:
+                type: string
+              time:
                 type: string
         406:
           description: user not existed
@@ -840,5 +841,3 @@ paths:
                 type: string
       security:
         - token: []
-            
-
