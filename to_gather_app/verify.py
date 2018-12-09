@@ -9,3 +9,4 @@ def try_ccnu(username = None, password = None):
         "username": username,
         "password": password
     }
+    return True

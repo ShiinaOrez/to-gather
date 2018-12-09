@@ -232,12 +232,9 @@ paths:
                 items:
                   required:
                     - pickable
-                    - waiting
                     - close
                   properties:
                     pickable:
-                      type: boolean
-                    waiting:
                       type: boolean
                     close:
                       type: boolean

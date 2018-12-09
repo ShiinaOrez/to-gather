@@ -4,27 +4,29 @@ from . import db
 from .exceptions import ActivityError
 import werkzeug.http
 from werkzeug.security import generate_password_hash, check_password_hash
-from itsdangerous import TimeJSONWebSignatureSerializer as Serializer
-from flask import current_app, jsonify
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from flask import current_app, jsonify, request
+from functools import wraps
 
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20))
     std_num = db.Column(db.String(11), unique=True)
-    posts = db.relationship('Activity', backref='user', lazy='dynamic')
-    picks = db.relationship('Activity', backref='user', lazy='dynamic')
-    
+
     @classmethod
     def init(cls, _data):
+        usr = cls.query.filter_by(std_num=_data.get("std_num")).first()
+        if usr is not None:
+            return usr
         new_user = cls(name = _data.get("username"),
                         std_num = _data.get("std_num"))
         db.session.add(new_user)
         db.session.commit()
         return new_user
 
-    def generate_token(self, expiration=99999999):
-        s = Serializer(current_app.config['SECRET_KEY'])
+    def generate_token(self):
+        s = Serializer(current_app.config['SECRET_KEY'], expires_in=99999999)
         return s.dumps({'std_num': self.std_num,
                         'confirm': self.id}).decode('utf-8')
 
@@ -49,18 +51,18 @@ class User(db.Model):
 
 class Activity(db.Model):
     __tablename__ = 'activities'
-    id = db.Column(db.Integer, unique=True)
+    id = db.Column(db.Integer, unique=True, primary_key=True)
     date = db.Column(db.Date)
     time = db.Column(db.String(40))
     event = db.Column(db.String(120))
     location = db.Column(db.String(60))
     tel = db.Column(db.String(13))
     qq = db.Column(db.String(12))
-    question = db.Column(db.String120)
-    pickable = db.Column(db.Bool, default=True)
-    close = db.Column(db.Bool, default=False)
-    poster_id = db.Column(db.Integer, unique=True, db.ForeignKey('users.id'))
-    picker_id = db.Column(db.Integer, unique=True, db.ForeignKey('users.id'))
+    question = db.Column(db.String(120))
+    pickable = db.Column(db.Boolean, default=True)
+    close = db.Column(db.Boolean, default=False)
+    poster_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    picker_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     @classmethod
     def init(cls, _data, _info):
@@ -87,9 +89,10 @@ class Activity(db.Model):
                   "event": self.event,
                   "location": self.location,
                   "question": self.question,
+                  "qq": self.qq,
+                  "tel": self.tel,
                   "statu": {
                       "pickable": self.pickable,
-                      "waiting": self.waiting,
                       "close": self.close
                   }
               }
@@ -125,19 +128,39 @@ class Picker2Activity(db.Model):
     __tablename__ = "picker2activities"
     id = db.Column(db.Integer, primary_key=True)
     answer = db.Column(db.String(120))
-    picker_id = db.Column(db.Integer, unique=True, db.ForeignKey("users.id"))
-    aid = db.Column(db.Integer, unique=True, db.ForeignKey("activities.id"))
+    picker_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    aid = db.Column(db.Integer, db.ForeignKey("activities.id"))
     waiting = db.Column(db.Boolean, default=True)
     fail = db.Column(db.Boolean, default=True)
+
+    def getFail(self):
+        return self.fail
+    def setFail(self, value):
+        self.waiting = False
+        self.fail = value
+        db.session.add(self)
+        db.session.commit()
+
+    FAIL = property(getFail, setFail)
+
+    @classmethod
+    def init(cls, aid, uid, ans):
+        record = cls.query.filter_by(aid=aid, picker_id=uid).first()
+        if record is not None:
+            return 
+        new_record = cls(aid=aid, picker_id=uid, answer=ans)
+        db.session.add(new_record)
+        db.session.commit()
+        return
 
 class Message(db.Model):
     __tablename__ = "messages"
     id = db.Column(db.Integer, primary_key=True)
     time = db.Column(db.String(40))
     # time here to use werkzeug.http.http_date string
-    readed = db.Column(db.Bool, default=False)
-    aid = db.Column(db.Integer, unique=True, db.ForeignKey("activities.id"))
-    picker_id = db.Column(db.Integer, unique=True, db.ForeignKey("users.id"))
+    readed = db.Column(db.Boolean, default=False)
+    aid = db.Column(db.Integer, db.ForeignKey("activities.id"))
+    picker_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     answer = db.Column(db.String(120))
 
     @classmethod
@@ -146,3 +169,5 @@ class Message(db.Model):
         msg.time = werkzeug.http.http_date(time.time())
         db.session.add(msg)
         db.session.commit()
+        Picker2Activity.init(aid, uid, ans)
+        return msg
