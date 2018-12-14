@@ -113,7 +113,7 @@ def post_list(info, unum):
             hasMessages = False
         data.append({
             "activityID": activity.id,
-            "datetime": str(activity.date) + activity.time,
+            "datetime": str(activity.date) + " " + activity.time,
             "event": activity.event,
             "close": activity.close,
             "hasMessage": hasMessages
