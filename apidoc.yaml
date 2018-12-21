@@ -710,6 +710,7 @@ paths:
               - event
               - question
               - answer
+              - picker_id
               - qq
               - tel
               - time
@@ -724,6 +725,12 @@ paths:
               question:
                 type: string
               answer:
+                type: string
+              picker_id:
+                type: string
+              qq:
+                type: string
+              tel:
                 type: string
               time:
                 type: string

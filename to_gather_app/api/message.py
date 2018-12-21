@@ -27,6 +27,7 @@ def message_entity(info, unum, mid):
         "event": info["event"],
         "question": info["question"],
         "answer": msg.answer,
+        "picker_id": msg.picker_id,
         "qq": info["qq"],
         "tel": info["tel"],
         "time": msg.time,
