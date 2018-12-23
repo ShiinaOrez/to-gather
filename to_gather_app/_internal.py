@@ -45,7 +45,7 @@ def _get_records(Table = None, Attr = None, Value = None, pageNum = None, pageSi
         hasNext = False
     if Attr is not None:
         if reverse:
-            dataList = db.session.query(Table).filter(Attr ==Value).order_by("id desc").limit(pageSize).offset((pageNum-1)*pageSize)
+            dataList = db.session.query(Table).filter(Attr ==Value).order_by(desc(Table.id)).limit(pageSize).offset((pageNum-1)*pageSize)
         else:
             dataList = db.session.query(Table).filter(Attr == Value).limit(pageSize).offset((pageNum-1)*pageSize)
     else:

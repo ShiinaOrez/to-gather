@@ -1,5 +1,5 @@
 import datetime
-from flask import jsonify, request, current_app
+from flask import jsonify, request, current_app, abort
 from . import api
 from .. import db
 from ..models import User, Activity, Message, Picker2Activity
@@ -39,7 +39,9 @@ def activity_entity(info, aid):
     
     if request.method == "POST":
         if info.get("id") == act.poster_id:
-            return jsonify({"msg": "can't pick your self"}), 407
+            print (info.get("id"), act.poster_id)
+#            return jsonify({"msg": "can't pick your self"}), 407
+            abort(410)
         record = Picker2Activity.query.filter_by(picker_id=info.get("id"), aid=aid).first()
         if record is not None:
             return jsonify({"msg": "already pick it before"}), 402
@@ -69,6 +71,10 @@ def activity_entity(info, aid):
             return jsonify({"msg": "picking error"}), 405
         else:
             records = Picker2Activity.query.filter_by(aid=aid).all()
+            activity = Activity.query.filter_by(id=aid).first()
+            if activity is not None:
+                activity.pickable = False
+                db.session.add(activity)
             for record in records:
                 if record.waiting:
                     record.waiting = False
@@ -80,7 +86,7 @@ def activity_entity(info, aid):
 @api.route("/activity/pickable/list/", methods=["GET"], endpoint="PickableList")
 def pickable_list():
     page = request.args.get("page")
-    _data = _get_records(Activity, Activity.pickable, True, page)
+    _data = _get_records(Activity, Activity.pickable, True, page, reverse=True)
     if _data["rowsNum"] == 0:
         return jsonify({"msg": "none activity"}), 201
     data = []
@@ -102,19 +108,27 @@ def post_list(info, unum):
         return jsonify({"msg": "user not existed!"}), 406
     if usr.id != info.get("id"):
         return jsonify({"msg": "please check your self information"}), 407
-    _data = _get_records(Activity, Activity.poster_id, usr.id, page)
+    _data = _get_records(Activity, Activity.poster_id, usr.id, page, reverse=True)
     if _data["rowsNum"] == 0:
         return jsonify({"msg": "you have posted nothing"}), 201
     data = []
     for activity in _data["activityList"]:
-        hasMessages = True
         msgs = Message.query.filter_by(aid=activity.id, readed=False).all()
-        if msgs is None or []:
+        try:
+            if len(msgs) >= 1:
+                hasMessages = True
+            else:
+                hasMessages = False
+        except:
             hasMessages = False
+        success = False
+        if not activity.pickable: #and not activity.close:
+            success = True
         data.append({
             "activityID": activity.id,
             "datetime": str(activity.date) + " " + activity.time,
             "event": activity.event,
+            "success": success,
             "close": activity.close,
             "hasMessage": hasMessages
         })
@@ -130,7 +144,7 @@ def pick_list(info, unum):
         return jsonify({"msg": "user not existed!"}), 406
     if usr.id != info.get("id"):
         return jsonify({"msg": "please check your self information"}), 407
-    _data = _get_records(Picker2Activity, Picker2Activity.picker_id, usr.id, page)
+    _data = _get_records(Picker2Activity, Picker2Activity.picker_id, usr.id, page, reverse=True)
     if _data["rowsNum"] == 0:
         return jsonify({"msg": "you have picked nothing"}), 201
     data = []

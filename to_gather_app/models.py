@@ -44,6 +44,7 @@ class User(db.Model):
                 return jsonify({"msg": "load token fail"}), 401
             uid = _data.get('confirm')
             unum = _data.get('std_num')
+            print (uid, unum)
             if (uid is None) or (unum is None):
                 return jsonify({"msg": "invalid token"}), 401
             return f({"id": uid, "unum": unum}, *args, **kwargs)
