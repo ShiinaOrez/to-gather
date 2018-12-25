@@ -51,6 +51,15 @@ def message_list(info, unum, aid):
     _data = Message.query.filter_by(aid=aid, readed=False).all()
     if act.close or (not act.pickable):
         msg = Message.query.filter_by(aid=act.id, picker_id=act.picker_id).first()
+        try:
+            for m in _data:
+                if m is msg:
+                    continue
+                record = Picker2Activity.query.filter_by(aid=act.id, picker_id=m.picker_id).first()
+                if record is not None:
+                    record.FAIL = True
+        except:
+            pass
         if msg is not None:
             _data = []
             _data.append(msg)

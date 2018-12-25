@@ -36,7 +36,7 @@ def activity_entity(info, aid):
         if act.close:
             return jsonify({"msg": "activity is closed"}), 403
         return jsonify(act.info), 200
-    
+
     if request.method == "POST":
         if info.get("id") == act.poster_id:
             print (info.get("id"), act.poster_id)
@@ -58,6 +58,8 @@ def activity_entity(info, aid):
         if act.close:
             return jsonify({"msg": "activity is closed"}), 403
         if not act.pickable:
+            if act.picker_id == request.json.get("pickerID"):
+                return jsonify({"msg": "get info again"}), 200
             return jsonify({"msg": "pick is over"}), 405
         if not request.json.get("atti"):
             record = Picker2Activity.query.filter_by(aid=aid, picker_id=request.json.get("pickerID")).first()
@@ -74,7 +76,7 @@ def activity_entity(info, aid):
         try:
             act.info = request.json.get("pickerID")
         except ActivityError:
-            return jsonify({"msg": "picking error"}), 405
+            return jsonify({"msg": "picking error"}), 410
         else:
             records = Picker2Activity.query.filter_by(aid=aid).all()
             activity = Activity.query.filter_by(id=aid).first()
@@ -120,6 +122,7 @@ def post_list(info, unum):
     data = []
     for activity in _data["activityList"]:
         msgs = Message.query.filter_by(aid=activity.id, readed=False).all()
+        success = False
         try:
             if len(msgs) >= 1:
                 hasMessages = True
@@ -129,11 +132,11 @@ def post_list(info, unum):
             hasMessages = False
         if activity.close and hasMessage:
             hasMessages = False
-        if not activity.pickable:
-            hasMessage = False
-        success = False
-        if not activity.pickable: #and not activity.close:
             success = True
+        if not activity.pickable:
+            hasMessages = False
+            success = True
+        print ("success:", success, "close:", activity.close, "hasM:", hasMessages)
         data.append({
             "activityID": activity.id,
             "datetime": str(activity.date) + " " + activity.time,

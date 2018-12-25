@@ -120,6 +120,10 @@ class Activity(db.Model):
     def delinfo(self):
         if not self.close:
             raise ActivityError
+        msgs = Message.query.filter_by(aid=self.id).all()
+        records = Picker2Activity.query.filter_by(aid=self.id).all()
+        for d in msgs, records:
+            db.session.delete(d)
         db.session.delete(self)
         db.session.commit()
 
