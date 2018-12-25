@@ -120,12 +120,12 @@ class Activity(db.Model):
     def delinfo(self):
         if not self.close:
             raise ActivityError
-        msgs = Message.query.filter_by(aid=self.id).all()
-        records = Picker2Activity.query.filter_by(aid=self.id).all()
-        for d in msgs, records:
-            db.session.delete(d)
-        db.session.delete(self)
-        db.session.commit()
+        try:
+            db.engine.execute("<SET FOREIGN_KEY_CHECKS=0>")
+            db.session.delete(self)
+            db.session.commit()
+        except:
+            pass
 
     info = property(getinfo, setinfo, delinfo, "I am information")
 
