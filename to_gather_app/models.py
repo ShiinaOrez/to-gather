@@ -26,7 +26,7 @@ class User(db.Model):
         return new_user
 
     def generate_token(self):
-        s = Serializer(current_app.config['SECRET_KEY'], expires_in=99999999)
+        s = Serializer("muxiniubi", expires_in=99999999)
         return s.dumps({'std_num': self.std_num,
                         'confirm': self.id}).decode('utf-8')
 
@@ -37,7 +37,7 @@ class User(db.Model):
                 return jsonify({"msg": "no token attribution"}), 401
             usr = None
             t = request.headers['token'].encode('utf-8')
-            s = Serializer(current_app.config['SECRET_KEY'])
+            s = Serializer("muxiniubi")
             try:
                 _data = s.loads(t)
             except:

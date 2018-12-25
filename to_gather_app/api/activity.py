@@ -61,7 +61,13 @@ def activity_entity(info, aid):
             return jsonify({"msg": "pick is over"}), 405
         if not request.json.get("atti"):
             record = Picker2Activity.query.filter_by(aid=aid, picker_id=request.json.get("pickerID")).first()
+            msg = Message.query.filter_by(aid=aid, picker_id=request.json.get("pickerID")).first()
+            if msg is not None:
+                msg.readed = True
+                db.session.add(msg)
             record.FAIL = True
+            db.session.add(record)
+            db.session.commit()
             return jsonify({"msg": "pick be refused"}), 201
         if act.poster_id != info.get("id"):
             return jsonify({"msg": "please modify your self activity"}), 401
@@ -121,6 +127,10 @@ def post_list(info, unum):
                 hasMessages = False
         except:
             hasMessages = False
+        if activity.close and hasMessage:
+            hasMessages = False
+        if not activity.pickable:
+            hasMessage = False
         success = False
         if not activity.pickable: #and not activity.close:
             success = True

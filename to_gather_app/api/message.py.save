@@ -49,11 +49,7 @@ def message_list(info, unum, aid):
     if act.poster_id != info.get("id"):
         return jsonify({"msg": "please check your self information"}), 407
     _data = Message.query.filter_by(aid=aid, readed=False).all()
-    if act.close or (not act.pickable):
-        msg = Message.query.filter_by(aid=act.id, picker_id=act.picker_id).first()
-        if msg is not None:
-            _data = []
-            _data.append(msg)
+    _data_2 = Message.query.filter_by(aid=aid, readed=True, )
     msgList = [a.id for a in _data]
     if len(msgList) == 0:
         return jsonify({"msg": "none messages"}), 201
